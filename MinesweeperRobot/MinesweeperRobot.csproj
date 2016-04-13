@@ -1,0 +1,106 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{AB6E14CF-131A-480F-95AD-6C3649291610}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>MinesweeperRobot</RootNamespace>
+    <AssemblyName>MinesweeperRobot</AssemblyName>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="GameBoard.cs" />
+    <Compile Include="Grid.cs" />
+    <Compile Include="Icons\Icon.cs" />
+    <Compile Include="Icons\IconScanner.cs" />
+    <Compile Include="Icons\IconScannerPoint.cs" />
+    <Compile Include="Strategy\GuessGrid.cs" />
+    <Compile Include="Strategy\RatioStrategy.cs" />
+    <Compile Include="Strategy\IStrategy.cs" />
+    <Compile Include="Strategy\StrategyBoard.cs" />
+    <Compile Include="Utility\ArrayUtil.cs" />
+    <Compile Include="Utility\Mouse.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Face.cs" />
+    <Compile Include="Utility\EnumerableUtil.cs" />
+    <Compile Include="Utility\IntegerMap.cs" />
+    <Compile Include="Utility\ObjectUtil.cs" />
+    <Compile Include="Utility\PointUtil.cs" />
+    <Compile Include="Utility\RandomUtil.cs" />
+    <Compile Include="Utility\RectangleUtil.cs" />
+    <Compile Include="Utility\SizeUtil.cs" />
+    <Compile Include="Utility\Window.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Icons\number1.png" />
+    <EmbeddedResource Include="Icons\number2.png" />
+    <EmbeddedResource Include="Icons\number3.png" />
+    <EmbeddedResource Include="Icons\number4.png" />
+    <EmbeddedResource Include="Icons\number5.png" />
+    <EmbeddedResource Include="Icons\number6.png" />
+    <EmbeddedResource Include="Icons\number7.png" />
+    <EmbeddedResource Include="Icons\number8.png" />
+    <EmbeddedResource Include="Icons\bomb.png" />
+    <EmbeddedResource Include="Icons\redBomb.png" />
+    <EmbeddedResource Include="Icons\empty.png" />
+    <EmbeddedResource Include="Icons\flag.png" />
+    <EmbeddedResource Include="Icons\lose.png" />
+    <EmbeddedResource Include="Icons\normal.png" />
+    <EmbeddedResource Include="Icons\grid.png" />
+    <EmbeddedResource Include="Icons\win.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Winmine__XP.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
