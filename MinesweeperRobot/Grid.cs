@@ -18,6 +18,20 @@ namespace MinesweeperRobot
         Number7, Number8,
 
         Flag = 10,
-        Bomb = 11
+        Question = 11,
+
+        Bomb = 20
+    }
+
+    public static class GridUtil
+    {
+        public static bool IsNumber(this Grid grid)
+        {
+            return Grid.Number1 <= grid && grid <= Grid.Number8;
+        }
+        public static bool IsWithin(this Grid grid, Grid from, Grid to)
+        {
+            return from <= grid && grid <= to;
+        }
     }
 }
