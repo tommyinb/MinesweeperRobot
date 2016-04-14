@@ -8,6 +8,7 @@ using MinesweeperRobot.Utility;
 using System.Threading;
 using MinesweeperRobot.Icons;
 using System.Drawing.Imaging;
+using System.Windows.Forms;
 
 namespace MinesweeperRobot
 {
@@ -20,7 +21,7 @@ namespace MinesweeperRobot
             gridScanner = new IconScanner(Icons.Icon.RawGrid, Icons.Icon.EmptyGrid,
                 Icons.Icon.Number1Grid, Icons.Icon.Number2Grid, Icons.Icon.Number3Grid, Icons.Icon.Number4Grid,
                 Icons.Icon.Number5Grid, Icons.Icon.Number6Grid, Icons.Icon.Number7Grid, Icons.Icon.Number8Grid,
-                Icons.Icon.FlagGrid, Icons.Icon.BombGrid, Icons.Icon.RedBombGrid);
+                Icons.Icon.FlagGrid, Icons.Icon.QuestionGrid, Icons.Icon.BombGrid, Icons.Icon.RedBombGrid);
 
             faceScanner = new IconScanner(Icons.Icon.NormalFace, Icons.Icon.WinFace, Icons.Icon.LoseFace);
         }
@@ -40,7 +41,7 @@ namespace MinesweeperRobot
             if (Window.GetForegroundWindow() != WindowHandle)
             {
                 Window.SetForegroundWindow(WindowHandle);
-                Thread.Sleep(100);
+                Thread.Sleep(500);
             }
 
             WindowRectangle = Window.GetRectangle(WindowHandle);
@@ -87,8 +88,11 @@ namespace MinesweeperRobot
             if (GridRectangle == Rectangle.Empty) throw new InvalidOperationException();
             if (Grids == null) throw new InvalidOperationException();
 
+            var captureLog = TimeLog.Stopwatch("Capture Grid");
             var bitmap = CaptureScreen(GridRectangle);
-            bitmap.Save("grids.png", ImageFormat.Png);
+            captureLog.Dispose();
+
+            var readLog = TimeLog.Stopwatch("Read Grid");
             using (var integerMap = new IntegerMap(bitmap))
             {
                 var gridCountX = Grids.GetLength(0);
@@ -98,11 +102,13 @@ namespace MinesweeperRobot
                 {
                     var gridLocation = gridIndex.Multiply(Icons.Icon.RawGrid.IntegerMap.Size);
                     var gridIcon = gridScanner.QuickRead(integerMap, gridLocation);
+                    if (gridIcon == null) throw new GameScanException("Scan grid failed");
 
                     var gridValue = MapGrid(gridIcon);
                     Grids[gridIndex.X, gridIndex.Y] = gridValue;
                 }
             }
+            readLog.Dispose();
         }
         private Grid MapGrid(Icons.Icon icon)
         {
@@ -150,6 +156,14 @@ namespace MinesweeperRobot
             {
                 return Grid.Flag;
             }
+            else if (icon == Icons.Icon.FlagGrid)
+            {
+                return Grid.Flag;
+            }
+            else if (icon == Icons.Icon.QuestionGrid)
+            {
+                return Grid.Question;
+            }
             else if (icon == Icons.Icon.BombGrid)
             {
                 return Grid.Bomb;
@@ -163,29 +177,24 @@ namespace MinesweeperRobot
                 throw new ArgumentException();
             }
         }
-        public void ClickGrid(Point gridIndex)
-        {
-            if (GridRectangle == Rectangle.Empty) throw new InvalidOperationException();
-            if (Grids == null) throw new InvalidOperationException();
-
-            var point = GridRectangle.Location.Add(new Point(
-                (int)((gridIndex.X + .5) * Icons.Icon.RawGrid.IntegerMap.Size.Width),
-                (int)((gridIndex.Y + .5) * Icons.Icon.RawGrid.IntegerMap.Size.Height)));
-
-            Click(point);
-        }
 
         public void QuickScanFace()
         {
             if (FaceRectangle == Rectangle.Empty) throw new InvalidOperationException();
 
+            var captureLog = TimeLog.Stopwatch("Capture Face");
             var bitmap = CaptureScreen(FaceRectangle);
-            bitmap.Save("face.png", ImageFormat.Png);
+            captureLog.Dispose();
+
+            var readLog = TimeLog.Stopwatch("Read Face");
             using (var integerMap = new IntegerMap(bitmap))
             {
                 var faceIcon = faceScanner.QuickRead(integerMap, Point.Empty);
+                if (faceIcon == null) throw new GameScanException("Scan face failed");
+
                 Face = MapFace(faceIcon);
             }
+            readLog.Dispose();
         }
         private Face MapFace(Icons.Icon faceIcon)
         {
@@ -206,26 +215,57 @@ namespace MinesweeperRobot
                 throw new ArgumentException();
             }
         }
-        public void ClickFace()
+
+        private void Click(Point point, MouseButton mouseButton)
         {
-            if (FaceRectangle == Rectangle.Empty) throw new InvalidOperationException();
+            var prevPoint = Cursor.Position;
 
-            var point = new Point(
-                FaceRectangle.X + FaceRectangle.Width / 2,
-                FaceRectangle.Y + FaceRectangle.Height / 2);
-
-            Click(point);
-        }
-
-        private void Click(Point point)
-        {
             Mouse.MoveTo(point);
             Thread.Sleep(1);
 
-            Mouse.MouseDown(MouseButton.Left);
+            Mouse.MouseDown(mouseButton);
             Thread.Sleep(1);
 
-            Mouse.MouseUp(MouseButton.Left);
+            Mouse.MouseUp(mouseButton);
+
+            Cursor.Position = prevPoint;
+        }
+
+        public Point CheckGrid(Point gridIndex)
+        {
+            if (GridRectangle == Rectangle.Empty) throw new InvalidOperationException();
+            if (Grids == null) throw new InvalidOperationException();
+            if (Grids.GetSize().Contains(gridIndex) == false) throw new ArgumentException();
+
+            return ClickGrid(gridIndex, MouseButton.Left);
+        }
+        public Point FlagGrid(Point gridIndex)
+        {
+            if (GridRectangle == Rectangle.Empty) throw new InvalidOperationException();
+            if (Grids == null) throw new InvalidOperationException();
+            if (Grids.GetSize().Contains(gridIndex) == false) throw new ArgumentException();
+
+            return ClickGrid(gridIndex, MouseButton.Right);
+        }
+        private Point ClickGrid(Point gridIndex, MouseButton mouseButton)
+        {
+            var gridLocation = GridRectangle.Location.Add(gridIndex.Multiply(Icons.Icon.RawGrid.IntegerMap.Size));
+            var gridCenter = new Rectangle(gridLocation, Icons.Icon.RawGrid.IntegerMap.Size).Center();
+
+            Click(gridCenter, mouseButton);
+
+            return gridCenter;
+        }
+
+        public Point ClickFace()
+        {
+            if (FaceRectangle == Rectangle.Empty) throw new InvalidOperationException();
+
+            var point = FaceRectangle.Center();
+
+            Click(point, MouseButton.Left);
+
+            return point;
         }
     }
 }

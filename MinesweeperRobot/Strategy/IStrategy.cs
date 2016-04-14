@@ -8,6 +8,6 @@ namespace MinesweeperRobot.Strategy
 {
     public interface IStrategy
     {
-        IEnumerable<GuessGrid> Deduce(StrategyBoard board);
+        IEnumerable<GuessGrid> Guess(StrategyBoard board);
     }
 }

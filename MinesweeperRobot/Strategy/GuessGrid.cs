@@ -11,8 +11,13 @@ namespace MinesweeperRobot.Strategy
     {
         public Point Point;
 
-        public Grid Grid;
+        public GuessValue Value;
 
-        public float Confidence;
+        public double Confidence;
+    }
+
+    public enum GuessValue
+    {
+        Empty, Bomb
     }
 }
