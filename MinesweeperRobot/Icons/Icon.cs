@@ -22,6 +22,7 @@ namespace MinesweeperRobot.Icons
         public readonly static Icon Number7Grid = new Icon("number7.png");
         public readonly static Icon Number8Grid = new Icon("number8.png");
         public readonly static Icon FlagGrid = new Icon("flag.png");
+        public readonly static Icon QuestionGrid = new Icon("question.png");
         public readonly static Icon BombGrid = new Icon("bomb.png");
         public readonly static Icon RedBombGrid = new Icon("redBomb.png");
         public readonly static Icon NormalFace = new Icon("normal.png");
