@@ -30,7 +30,7 @@ namespace MinesweeperRobot.Icons
                 return new IconScannerPoint { Point = point, Values = scannerValues.ToArray() };
             }).ToArray();
 
-            this.scannerPoints = scannerPoints.OrderByDescending(t => t.Values.Count()).Take(scannerPointCount).ToArray();
+            this.scannerPoints = ReduceScannerPoints(scannerPoints).ToArray();
         }
         private Icon[] icons;
 
@@ -56,8 +56,49 @@ namespace MinesweeperRobot.Icons
             });
         }
 
-        private const int scannerPointCount = 30;
+        private const int scannerPointCount = 10;
         private IconScannerPoint[] scannerPoints;
+        private static IEnumerable<IconScannerPoint> ReduceScannerPoints(IEnumerable<IconScannerPoint> scannerPoints)
+        {
+            var validScannerPoints = new List<IconScannerPoint>();
+
+            var icons = scannerPoints.SelectMany(t => t.Values.SelectMany(s => s.Icons)).Distinct().ToChain();
+
+            var prevConfusions = new[] { icons.ToChain() };
+            for (int i = 0; i < scannerPointCount && prevConfusions.Any(); i++)
+            {
+                var remainingScannerPoints = scannerPoints.Except(validScannerPoints);
+                if (remainingScannerPoints.Any() == false) break;
+
+                var scannerPointConfusions = remainingScannerPoints.ToDictionary(t => t, scannerPoint =>
+                {
+                    var confusions = prevConfusions.SelectMany(confusedGroup =>
+                    {
+                        return scannerPoint.Values.SelectMany(scannerPointValue =>
+                        {
+                            return new[]
+                            {
+                                confusedGroup.Intersect(scannerPointValue.Icons).ToChain(),
+                                confusedGroup.Except(scannerPointValue.Icons).ToChain()
+                            };
+                        });
+                    }).ToArray();
+
+                    var concludeds = confusions.Where(t => t.Count() == 1).Select(t => t.Single()).ToArray();
+                    return confusions.Where(t => t.Count() >= 2).Select(t => t.Except(concludeds).ToChain()).ToArray();
+                });
+
+                var orderedScannerPointConfusions = scannerPointConfusions.OrderBy(scannerPointConfusion =>
+                    scannerPointConfusion.Value.Any() ? scannerPointConfusion.Value.Max(t => t.Count()) : 0);
+
+                var nextScannerPoint = orderedScannerPointConfusions.First();
+                validScannerPoints.Add(nextScannerPoint.Key);
+
+                prevConfusions = nextScannerPoint.Value;
+            }
+
+            return validScannerPoints;
+        }
 
         public Icon QuickRead(IntegerMap targetMap, Point offset)
         {
