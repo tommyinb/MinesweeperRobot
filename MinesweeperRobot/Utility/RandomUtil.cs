@@ -6,7 +6,13 @@ using System.Threading.Tasks;
 
 namespace MinesweeperRobot.Utility
 {
-    class RandomUtil
+    public static class RandomUtil
     {
+        private static Lazy<Random> random = new Lazy<Random>();
+
+        public static T[] Randomize<T>(this T[] items)
+        {
+            return items.OrderBy(t => random.Value.Next(items.Length)).ToArray();
+        }
     }
 }

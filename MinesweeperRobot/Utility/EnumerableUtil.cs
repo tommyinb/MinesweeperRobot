@@ -23,5 +23,16 @@ namespace MinesweeperRobot.Utility
                 }
             }
         }
+
+        public static Dictionary<TKey, TElement> ToDictionary<TSource, TKey, TElement>(this IEnumerable<TSource> source, Func<TSource, int, TKey> keySelector, Func<TSource, int, TElement> elementSelector)
+        {
+            var pairs = source.Select((t, i) => new
+            {
+                key = keySelector(t, i),
+                element = elementSelector(t, i)
+            });
+
+            return pairs.ToDictionary(t => t.key, t => t.element);
+        }
     }
 }

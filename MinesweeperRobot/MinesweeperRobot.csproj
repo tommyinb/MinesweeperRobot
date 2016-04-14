@@ -47,15 +47,20 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GameBoard.cs" />
+    <Compile Include="GameScanException.cs" />
     <Compile Include="Grid.cs" />
     <Compile Include="Icons\Icon.cs" />
     <Compile Include="Icons\IconScanner.cs" />
     <Compile Include="Icons\IconScannerPoint.cs" />
+    <Compile Include="Strategy\JoinRatioStrategy.cs" />
     <Compile Include="Strategy\GuessGrid.cs" />
-    <Compile Include="Strategy\RatioStrategy.cs" />
+    <Compile Include="Strategy\GlobalRatioStrategy.cs" />
     <Compile Include="Strategy\IStrategy.cs" />
+    <Compile Include="Strategy\LocalRatioStrategy.cs" />
     <Compile Include="Strategy\StrategyBoard.cs" />
+    <Compile Include="TimeLog.cs" />
     <Compile Include="Utility\ArrayUtil.cs" />
+    <Compile Include="Utility\Chain.cs" />
     <Compile Include="Utility\Mouse.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -91,6 +96,7 @@
     <EmbeddedResource Include="Icons\win.png" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Icons\question.png" />
     <Content Include="Winmine__XP.exe">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

@@ -23,5 +23,17 @@ namespace MinesweeperRobot.Utility
         {
             return new Point(point.X * size.Width, point.Y * size.Height);
         }
+
+        public static IEnumerable<Point> Surrounding(this Point center)
+        {
+            yield return new Point(center.X - 1, center.Y);
+            yield return new Point(center.X - 1, center.Y - 1);
+            yield return new Point(center.X, center.Y - 1);
+            yield return new Point(center.X + 1, center.Y - 1);
+            yield return new Point(center.X + 1, center.Y);
+            yield return new Point(center.X + 1, center.Y + 1);
+            yield return new Point(center.X, center.Y + 1);
+            yield return new Point(center.X - 1, center.Y + 1);
+        }
     }
 }
