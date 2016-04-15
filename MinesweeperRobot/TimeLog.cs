@@ -38,7 +38,7 @@ namespace MinesweeperRobot
         {
             stopwatch.Stop();
 
-            TimeLog.Log(item + " (Stop with length " + stopwatch.Elapsed.ToString(@"ss\.fff") + ")");
+            TimeLog.Log(item + " (Stop with length " + stopwatch.Elapsed.ToString(@"s\.fff") + ")");
         }
     }
 }
