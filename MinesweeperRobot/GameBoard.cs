@@ -26,29 +26,40 @@ namespace MinesweeperRobot
             faceScanner = new IconScanner(Icons.Icon.NormalFace, Icons.Icon.WinFace, Icons.Icon.LoseFace);
         }
         public readonly IntPtr WindowHandle;
+
         public Rectangle WindowRectangle { get; private set; }
+        private Bitmap windowBitmap;
+        public void CaptureWindow()
+        {
+            var captureLog = TimeLog.Stopwatch("Capture Window");
 
-        public Rectangle GridRectangle { get; private set; }
-        public Grid[,] Grids { get; private set; }
-        private IconScanner gridScanner;
+            WindowRectangle = Window.GetRectangle(WindowHandle);
+            if (WindowRectangle == default(Rectangle)) throw new GameScanException("Capture window failed");
 
-        public Rectangle FaceRectangle { get; private set; }
-        public Face Face { get; private set; }
-        private IconScanner faceScanner;
+            windowBitmap = new Bitmap(WindowRectangle.Width, WindowRectangle.Height, PixelFormat.Format32bppArgb);
+            using (var graphics = Graphics.FromImage(windowBitmap))
+            {
+                graphics.CopyFromScreen(WindowRectangle.Location, Point.Empty, windowBitmap.Size);
+            }
+
+            windowBitmap.Save("capture.png", ImageFormat.Png);
+
+            captureLog.Dispose();
+        }
+        private Bitmap GetCapture(Rectangle screenRectangle)
+        {
+            var relativeLocation = screenRectangle.Location.Minus(WindowRectangle.Location);
+            var relativeRectangle = new Rectangle(relativeLocation, screenRectangle.Size);
+
+            var withinWindowBitmap = new Rectangle(Point.Empty, windowBitmap.Size).Contains(relativeRectangle);
+            if (withinWindowBitmap == false) throw new GameScanException("Capture window part failed");
+
+            return windowBitmap.Clone(relativeRectangle, windowBitmap.PixelFormat);
+        }
 
         public void FullScanWindow()
         {
-            if (Window.GetForegroundWindow() != WindowHandle)
-            {
-                Window.SetForegroundWindow(WindowHandle);
-                Thread.Sleep(500);
-            }
-
-            WindowRectangle = Window.GetRectangle(WindowHandle);
-
-            var bitmap = CaptureScreen(WindowRectangle);
-            bitmap.Save("window.png", ImageFormat.Png);
-            using (var integerMap = new IntegerMap(bitmap))
+            using (var integerMap = new IntegerMap(windowBitmap))
             {
                 var gridIcons = gridScanner.FullScan(integerMap).ToArray();
                 var gridLeft = gridIcons.Min(t => t.Item1.X);
@@ -71,25 +82,17 @@ namespace MinesweeperRobot
                 QuickScanFace();
             }
         }
-        private Bitmap CaptureScreen(Rectangle rectangle)
-        {
-            var bitmap = new Bitmap(rectangle.Width, rectangle.Height, PixelFormat.Format32bppArgb);
 
-            using (var graphics = Graphics.FromImage(bitmap))
-            {
-                graphics.CopyFromScreen(rectangle.Location, Point.Empty, bitmap.Size);
-            }
-
-            return bitmap;
-        }
-
+        public Rectangle GridRectangle { get; private set; }
+        public Grid[,] Grids { get; private set; }
+        private IconScanner gridScanner;
         public void QuickScanGrids()
         {
             if (GridRectangle == Rectangle.Empty) throw new InvalidOperationException();
             if (Grids == null) throw new InvalidOperationException();
 
             var captureLog = TimeLog.Stopwatch("Capture Grid");
-            var bitmap = CaptureScreen(GridRectangle);
+            var bitmap = GetCapture(GridRectangle);
             captureLog.Dispose();
 
             var readLog = TimeLog.Stopwatch("Read Grid");
@@ -178,12 +181,17 @@ namespace MinesweeperRobot
             }
         }
 
+        public Rectangle FaceRectangle { get; private set; }
+        public Face Face { get; private set; }
+        private IconScanner faceScanner;
         public void QuickScanFace()
         {
             if (FaceRectangle == Rectangle.Empty) throw new InvalidOperationException();
 
+            var scanLog = TimeLog.Stopwatch("Run Face");
+
             var captureLog = TimeLog.Stopwatch("Capture Face");
-            var bitmap = CaptureScreen(FaceRectangle);
+            var bitmap = GetCapture(FaceRectangle);
             captureLog.Dispose();
 
             var readLog = TimeLog.Stopwatch("Read Face");
@@ -195,6 +203,8 @@ namespace MinesweeperRobot
                 Face = MapFace(faceIcon);
             }
             readLog.Dispose();
+
+            scanLog.Dispose();
         }
         private Face MapFace(Icons.Icon faceIcon)
         {
@@ -218,17 +228,13 @@ namespace MinesweeperRobot
 
         private void Click(Point point, MouseButton mouseButton)
         {
-            var prevPoint = Cursor.Position;
-
-            Mouse.MoveTo(point);
+            Cursor.Position = point;
             Thread.Sleep(1);
 
             Mouse.MouseDown(mouseButton);
             Thread.Sleep(1);
 
             Mouse.MouseUp(mouseButton);
-
-            Cursor.Position = prevPoint;
         }
 
         public Point CheckGrid(Point gridIndex)

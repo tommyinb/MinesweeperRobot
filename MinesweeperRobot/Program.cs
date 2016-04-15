@@ -17,6 +17,9 @@ namespace MinesweeperRobot
     {
         static void Main(string[] args)
         {
+            var logWriter = new LogWriter(Console.Out, "console.log");
+            Console.SetOut(logWriter);
+
             while (true)
             {
                 try
@@ -33,20 +36,21 @@ namespace MinesweeperRobot
         }
         private void Main()
         {
+            Console.WriteLine("Start game...");
             var board = StartGame();
+
+            Console.WriteLine("Full scan...");
+            board.CaptureWindow();
             board.FullScanWindow();
 
             while (true)
             {
-                using (TimeLog.Stopwatch("Run Face"))
-                {
-                    RunFace(board);
-                }
+                board.CaptureWindow();
+                RunFace(board);
+                RunGame(board);
 
-                using (TimeLog.Stopwatch("Run Game"))
-                {
-                    RunGame(board);
-                }
+                CheckCursor(board);
+                Thread.Sleep(1);
             }
         }
         
@@ -64,7 +68,14 @@ namespace MinesweeperRobot
                 Thread.Sleep(1000);
             }
 
-            Console.WriteLine("Start Game...");
+            var foregroundWindow = Window.GetForegroundWindow();
+            if (foregroundWindow != process.MainWindowHandle)
+            {
+                Console.WriteLine("Bring minesweeper to foreground.");
+                Window.SetForegroundWindow(process.MainWindowHandle);
+                Thread.Sleep(1000);
+            }
+
             return new GameBoard(process.MainWindowHandle);
         }
         private void WriteGame(GameBoard board)
@@ -103,10 +114,7 @@ namespace MinesweeperRobot
 
         private void RunFace(GameBoard board)
         {
-            using (TimeLog.Stopwatch("Scan Face"))
-            {
-                board.QuickScanFace();
-            }
+            board.QuickScanFace();
 
             while (true)
             {
@@ -124,10 +132,8 @@ namespace MinesweeperRobot
 
                         while (board.Face == Face.Win)
                         {
-                            using (TimeLog.Stopwatch("Scan Face"))
-                            {
-                                board.QuickScanFace();
-                            }
+                            board.CaptureWindow();
+                            board.QuickScanFace();
                         }
                         break;
 
@@ -138,10 +144,8 @@ namespace MinesweeperRobot
 
                         while (board.Face == Face.Lose)
                         {
-                            using (TimeLog.Stopwatch("Scan Face"))
-                            {
-                                board.QuickScanFace();
-                            }
+                            board.CaptureWindow();
+                            board.QuickScanFace();
                         }
                         break;
 
@@ -153,32 +157,42 @@ namespace MinesweeperRobot
 
         private void RunGame(GameBoard gameBoard)
         {
-            using (TimeLog.Stopwatch("Scan Grids"))
-            {
-                gameBoard.QuickScanGrids();
-            }
+            gameBoard.QuickScanGrids();
 
             var strategyBoard = new StrategyBoard(gameBoard.Grids, 99);
+            var strategies = GetStrategies(strategyBoard);
+            var guesses = RunStrategies(strategyBoard, strategies);
 
-            var strategies = new IStrategy[]
+            ApplyGuess(gameBoard, guesses);
+        }
+        private IEnumerable<IStrategy> GetStrategies(StrategyBoard board)
+        {
+            var rawAmount = (float)board.RawCount / (board.Size.Width * board.Size.Height);
+
+            if (rawAmount < .9)
             {
-                new LocalRatioStrategy(),
-                new JoinRatioStrategy(),
-                new GlobalRatioStrategy()
-            };
+                yield return new CountStrategy();
+            }
+            if (rawAmount < .6)
+            {
+                yield return new BruteForceStrategy();
+            }
 
+            yield return new RandomStrategy();
+        }
+        private IEnumerable<GuessGrid> RunStrategies(StrategyBoard board, IEnumerable<IStrategy> strategies)
+        {
             var possibleGuesses = new List<GuessGrid>();
             foreach (var strategy in strategies)
             {
                 Console.WriteLine("Run " + strategy.GetType().Name);
 
-                var strategyGuesses = strategy.Guess(strategyBoard).ToArray();
+                var strategyGuesses = strategy.Guess(board).ToArray();
 
                 var confirmedGuesses = strategyGuesses.Where(t => t.Confidence >= 1).ToArray();
                 if (confirmedGuesses.Any())
                 {
-                    ApplyGuess(gameBoard, confirmedGuesses);
-                    return;
+                    return confirmedGuesses;
                 }
 
                 possibleGuesses.AddRange(strategyGuesses);
@@ -186,8 +200,9 @@ namespace MinesweeperRobot
 
             var possibleEmpties = possibleGuesses.Where(t => t.Value == GuessValue.Empty);
             var bestPossibleEmpty = possibleEmpties.OrderByDescending(t => t.Confidence).First();
-            ApplyGuess(gameBoard, new[] { bestPossibleEmpty });
+            return new[] { bestPossibleEmpty };
         }
+
         private void ApplyGuess(GameBoard gameBoard, IEnumerable<GuessGrid> guesses)
         {
             var guessGroups = guesses.GroupBy(t => t.Point);
@@ -199,18 +214,33 @@ namespace MinesweeperRobot
                     case GuessValue.Empty:
                         Console.WriteLine("Check (" + guess.Point.X + ", " + guess.Point.Y + ") "
                             + "with confidence " + guess.Confidence.ToString("0.0"));
-                        gameBoard.CheckGrid(guess.Point);
+                        lastCursor = gameBoard.CheckGrid(guess.Point);
                         break;
 
                     case GuessValue.Bomb:
                         Console.WriteLine("Flag (" + guess.Point.X + ", " + guess.Point.Y + ") "
                             + "with confidence " + guess.Confidence.ToString("0.0"));
-                        gameBoard.FlagGrid(guess.Point);
+                        lastCursor = gameBoard.FlagGrid(guess.Point);
                         break;
 
                     default:
                         throw new ArgumentException();
                 }
+            }
+        }
+        private Point lastCursor = Cursor.Position;
+        private void CheckCursor(GameBoard board)
+        {
+            if (Cursor.Position != lastCursor)
+            {
+                Console.WriteLine("Cursor moved.");
+                Console.WriteLine("Stop game.");
+
+                Console.WriteLine("Please enter to resume game...");
+                Console.ReadLine();
+
+                Window.SetForegroundWindow(board.WindowHandle);
+                Thread.Sleep(1000);
             }
         }
     }
