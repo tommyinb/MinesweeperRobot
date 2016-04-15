@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace MinesweeperRobot.Strategy
 {
-    public class JoinRatioStrategy : IStrategy
+    public class BruteForceStrategy : IStrategy
     {
         public IEnumerable<GuessGrid> Guess(StrategyBoard board)
         {
@@ -66,16 +66,15 @@ namespace MinesweeperRobot.Strategy
                 {
                     var surroundingPoint = surroundingRawPoints[i];
 
-                    var validValues = Enumerable.Range(0, validCombinationCount).Select(j => validSurroundingCombinations[j][i]);
-                    if (validValues.Distinct().Count() == 1)
+                    var validValues = Enumerable.Range(0, validCombinationCount).Select(j => validSurroundingCombinations[j][i]).ToArray();
+                    var probableValues = validValues.GroupBy(t => t).OrderByDescending(t => t.Count()).First();
+
+                    yield return new GuessGrid
                     {
-                        yield return new GuessGrid
-                        {
-                            Point = surroundingPoint,
-                            Value = validValues.First(),
-                            Confidence = 1
-                        };
-                    }
+                        Point = surroundingPoint,
+                        Value = probableValues.First(),
+                        Confidence = probableValues.Count() / validValues.Count()
+                    };
                 }
             }
         }

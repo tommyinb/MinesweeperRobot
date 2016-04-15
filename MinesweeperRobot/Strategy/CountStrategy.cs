@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace MinesweeperRobot.Strategy
 {
-    public class LocalRatioStrategy : IStrategy
+    public class CountStrategy : IStrategy
     {
         public IEnumerable<GuessGrid> Guess(StrategyBoard board)
         {
