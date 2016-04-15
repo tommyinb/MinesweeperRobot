@@ -13,11 +13,4 @@ namespace MinesweeperRobot.Icons
 
         public IconScannerValue[] Values;
     }
-
-    public struct IconScannerValue
-    {
-        public uint Pixel;
-
-        public Icon[] Icons;
-    }
 }
