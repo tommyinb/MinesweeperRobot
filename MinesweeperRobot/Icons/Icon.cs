@@ -25,9 +25,21 @@ namespace MinesweeperRobot.Icons
         public readonly static Icon QuestionGrid = new Icon("question.png");
         public readonly static Icon BombGrid = new Icon("bomb.png");
         public readonly static Icon RedBombGrid = new Icon("redBomb.png");
+
         public readonly static Icon NormalFace = new Icon("normal.png");
         public readonly static Icon WinFace = new Icon("win.png");
         public readonly static Icon LoseFace = new Icon("lose.png");
+
+        public readonly static Icon Count0 = new Icon("count0.png");
+        public readonly static Icon Count1 = new Icon("count1.png");
+        public readonly static Icon Count2 = new Icon("count2.png");
+        public readonly static Icon Count3 = new Icon("count3.png");
+        public readonly static Icon Count4 = new Icon("count4.png");
+        public readonly static Icon Count5 = new Icon("count5.png");
+        public readonly static Icon Count6 = new Icon("count6.png");
+        public readonly static Icon Count7 = new Icon("count7.png");
+        public readonly static Icon Count8 = new Icon("count8.png");
+        public readonly static Icon Count9 = new Icon("count9.png");
 
         public readonly string FileName;
         public readonly IntegerMap IntegerMap;

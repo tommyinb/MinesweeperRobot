@@ -59,7 +59,7 @@
     <Compile Include="Strategy\IStrategy.cs" />
     <Compile Include="Strategy\CountStrategy.cs" />
     <Compile Include="Strategy\StrategyBoard.cs" />
-    <Compile Include="TimeLog.cs" />
+    <Compile Include="Utility\TimeLog.cs" />
     <Compile Include="Utility\ArrayUtil.cs" />
     <Compile Include="Utility\Chain.cs" />
     <Compile Include="Utility\LogWriter.cs" />
@@ -74,6 +74,7 @@
     <Compile Include="Utility\RandomUtil.cs" />
     <Compile Include="Utility\RectangleUtil.cs" />
     <Compile Include="Utility\SizeUtil.cs" />
+    <Compile Include="Utility\TryUtil.cs" />
     <Compile Include="Utility\Window.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -99,6 +100,16 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Icons\question.png" />
+    <EmbeddedResource Include="Icons\count0.png" />
+    <EmbeddedResource Include="Icons\count1.png" />
+    <EmbeddedResource Include="Icons\count2.png" />
+    <EmbeddedResource Include="Icons\count3.png" />
+    <EmbeddedResource Include="Icons\count4.png" />
+    <EmbeddedResource Include="Icons\count5.png" />
+    <EmbeddedResource Include="Icons\count6.png" />
+    <EmbeddedResource Include="Icons\count7.png" />
+    <EmbeddedResource Include="Icons\count8.png" />
+    <EmbeddedResource Include="Icons\count9.png" />
     <Content Include="Winmine__XP.exe">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

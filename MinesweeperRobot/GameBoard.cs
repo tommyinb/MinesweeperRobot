@@ -24,6 +24,10 @@ namespace MinesweeperRobot
                 Icons.Icon.FlagGrid, Icons.Icon.QuestionGrid, Icons.Icon.BombGrid, Icons.Icon.RedBombGrid);
 
             faceScanner = new IconScanner(Icons.Icon.NormalFace, Icons.Icon.WinFace, Icons.Icon.LoseFace);
+
+            bombCountScanner = new IconScanner(Icons.Icon.Count0, Icons.Icon.Count1,
+                Icons.Icon.Count2, Icons.Icon.Count3, Icons.Icon.Count4, Icons.Icon.Count5,
+                Icons.Icon.Count6, Icons.Icon.Count7, Icons.Icon.Count8, Icons.Icon.Count9);
         }
         public readonly IntPtr WindowHandle;
 
@@ -56,7 +60,6 @@ namespace MinesweeperRobot
 
             return windowBitmap.Clone(relativeRectangle, windowBitmap.PixelFormat);
         }
-
         public void FullScanWindow()
         {
             using (var integerMap = new IntegerMap(windowBitmap))
@@ -78,9 +81,24 @@ namespace MinesweeperRobot
                 var faceIcon = faceIcons.Single();
                 var faceRectangle = new Rectangle(faceIcon.Item1, faceIcon.Item2.IntegerMap.Size);
                 FaceRectangle = faceRectangle.Add(WindowRectangle.Location);
-
                 QuickScanFace();
+
+                var scoreIcons = bombCountScanner.FullScan(integerMap).ToArray();
+                var bombCountIcons = scoreIcons.Where(t => t.Item1.X < integerMap.Size.Width / 2).OrderBy(t => t.Item1.X);
+                var bombCountRectangles = bombCountIcons.Select(t => new Rectangle(t.Item1, t.Item2.IntegerMap.Size));
+                BombCountRectangles = bombCountRectangles.Select(t => t.Add(WindowRectangle.Location)).ToArray();
+                QuickScanBombCount();
             }
+        }
+        private void Click(Point point, MouseButton mouseButton)
+        {
+            Cursor.Position = point;
+            Thread.Sleep(TimeSpan.FromMilliseconds(.1));
+
+            Mouse.MouseDown(mouseButton);
+            Thread.Sleep(TimeSpan.FromMilliseconds(.1));
+
+            Mouse.MouseUp(mouseButton);
         }
 
         public Rectangle GridRectangle { get; private set; }
@@ -180,63 +198,6 @@ namespace MinesweeperRobot
                 throw new ArgumentException();
             }
         }
-
-        public Rectangle FaceRectangle { get; private set; }
-        public Face Face { get; private set; }
-        private IconScanner faceScanner;
-        public void QuickScanFace()
-        {
-            if (FaceRectangle == Rectangle.Empty) throw new InvalidOperationException();
-
-            var scanLog = TimeLog.Stopwatch("Run Face");
-
-            var captureLog = TimeLog.Stopwatch("Capture Face");
-            var bitmap = GetCapture(FaceRectangle);
-            captureLog.Dispose();
-
-            var readLog = TimeLog.Stopwatch("Read Face");
-            using (var integerMap = new IntegerMap(bitmap))
-            {
-                var faceIcon = faceScanner.QuickRead(integerMap, Point.Empty);
-                if (faceIcon == null) throw new GameScanException("Scan face failed");
-
-                Face = MapFace(faceIcon);
-            }
-            readLog.Dispose();
-
-            scanLog.Dispose();
-        }
-        private Face MapFace(Icons.Icon faceIcon)
-        {
-            if (faceIcon == Icons.Icon.NormalFace)
-            {
-                return Face.Normal;
-            }
-            else if (faceIcon == Icons.Icon.WinFace)
-            {
-                return Face.Win;
-            }
-            else if (faceIcon == Icons.Icon.LoseFace)
-            {
-                return Face.Lose;
-            }
-            else
-            {
-                throw new ArgumentException();
-            }
-        }
-
-        private void Click(Point point, MouseButton mouseButton)
-        {
-            Cursor.Position = point;
-            Thread.Sleep(1);
-
-            Mouse.MouseDown(mouseButton);
-            Thread.Sleep(1);
-
-            Mouse.MouseUp(mouseButton);
-        }
-
         public Point CheckGrid(Point gridIndex)
         {
             if (GridRectangle == Rectangle.Empty) throw new InvalidOperationException();
@@ -263,6 +224,46 @@ namespace MinesweeperRobot
             return gridCenter;
         }
 
+        public Rectangle FaceRectangle { get; private set; }
+        public Face Face { get; private set; }
+        private IconScanner faceScanner;
+        public void QuickScanFace()
+        {
+            if (FaceRectangle == Rectangle.Empty) throw new InvalidOperationException();
+
+            var captureLog = TimeLog.Stopwatch("Capture Face");
+            var bitmap = GetCapture(FaceRectangle);
+            captureLog.Dispose();
+
+            var readLog = TimeLog.Stopwatch("Read Face");
+            using (var integerMap = new IntegerMap(bitmap))
+            {
+                var faceIcon = faceScanner.QuickRead(integerMap, Point.Empty);
+                if (faceIcon == null) throw new GameScanException("Scan face failed");
+
+                Face = MapFace(faceIcon);
+            }
+            readLog.Dispose();
+        }
+        private Face MapFace(Icons.Icon faceIcon)
+        {
+            if (faceIcon == Icons.Icon.NormalFace)
+            {
+                return Face.Normal;
+            }
+            else if (faceIcon == Icons.Icon.WinFace)
+            {
+                return Face.Win;
+            }
+            else if (faceIcon == Icons.Icon.LoseFace)
+            {
+                return Face.Lose;
+            }
+            else
+            {
+                throw new ArgumentException();
+            }
+        }
         public Point ClickFace()
         {
             if (FaceRectangle == Rectangle.Empty) throw new InvalidOperationException();
@@ -272,6 +273,79 @@ namespace MinesweeperRobot
             Click(point, MouseButton.Left);
 
             return point;
+        }
+
+        public Rectangle[] BombCountRectangles { get; private set; }
+        public int BombCount { get; private set; }
+        private IconScanner bombCountScanner;
+        public void QuickScanBombCount()
+        {
+            if (BombCountRectangles == null) throw new InvalidOperationException();
+
+            var captureLog = TimeLog.Stopwatch("Capture Bomb Count");
+            var bitmaps = BombCountRectangles.Select(GetCapture).ToArray();
+            captureLog.Dispose();
+
+            var readLog = TimeLog.Stopwatch("Read Face");
+            var bombCountDigits = bitmaps.Select(bitmap =>
+            {
+                using (var integerMap = new IntegerMap(bitmap))
+                {
+                    var bombCountIcon = bombCountScanner.QuickRead(integerMap, Point.Empty);
+                    if (bombCountIcon == null) throw new GameScanException("Scan bomb count failed");
+
+                    return MapBombCount(bombCountIcon);
+                }
+            });
+            BombCount = bombCountDigits.Aggregate((total, curr) => total * 10 + curr);
+            readLog.Dispose();
+        }
+        private int MapBombCount(Icons.Icon bombCountIcon)
+        {
+            if (bombCountIcon == Icons.Icon.Count0)
+            {
+                return 0;
+            }
+            else if (bombCountIcon == Icons.Icon.Count1)
+            {
+                return 1;
+            }
+            else if (bombCountIcon == Icons.Icon.Count2)
+            {
+                return 2;
+            }
+            else if (bombCountIcon == Icons.Icon.Count3)
+            {
+                return 3;
+            }
+            else if (bombCountIcon == Icons.Icon.Count4)
+            {
+                return 4;
+            }
+            else if (bombCountIcon == Icons.Icon.Count5)
+            {
+                return 5;
+            }
+            else if (bombCountIcon == Icons.Icon.Count6)
+            {
+                return 6;
+            }
+            else if (bombCountIcon == Icons.Icon.Count7)
+            {
+                return 7;
+            }
+            else if (bombCountIcon == Icons.Icon.Count8)
+            {
+                return 8;
+            }
+            else if (bombCountIcon == Icons.Icon.Count9)
+            {
+                return 9;
+            }
+            else
+            {
+                throw new ArgumentException();
+            }
         }
     }
 }
