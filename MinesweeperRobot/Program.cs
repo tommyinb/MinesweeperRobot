@@ -49,6 +49,7 @@ namespace MinesweeperRobot
             Console.WriteLine("Full scan...");
             board.CaptureWindow();
             board.FullScanWindow();
+            lastCursor = Cursor.Position;
 
             while (true)
             {
