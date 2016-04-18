@@ -13,7 +13,7 @@ namespace MinesweeperRobot.Utility
         {
             this.items = new List<T>(items);
         }
-        private List<T> items;
+        private readonly List<T> items;
 
         public override bool Equals(object obj)
         {
