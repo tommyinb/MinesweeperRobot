@@ -82,7 +82,7 @@ namespace MinesweeperRobot.Icons
                                 confusedGroup.Except(scannerPointValue.Icons).ToChain()
                             };
                         });
-                    }).ToArray();
+                    }).Distinct().ToArray();
 
                     var concludeds = confusions.Where(t => t.Count() == 1).Select(t => t.Single()).ToArray();
                     return confusions.Where(t => t.Count() >= 2).Select(t => t.Except(concludeds).ToChain()).ToArray();
