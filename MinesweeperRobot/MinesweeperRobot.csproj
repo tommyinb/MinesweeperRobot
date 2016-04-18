@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GameBoard.cs" />
+    <Compile Include="GamePauseException.cs" />
     <Compile Include="GameScanException.cs" />
     <Compile Include="Grid.cs" />
     <Compile Include="Icons\Icon.cs" />

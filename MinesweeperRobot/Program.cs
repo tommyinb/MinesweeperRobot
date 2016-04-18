@@ -32,6 +32,13 @@ namespace MinesweeperRobot
                     Console.WriteLine("Retry after 5 seconds...");
                     Thread.Sleep(TimeSpan.FromSeconds(5));
                 }
+                catch (GamePauseException)
+                {
+                    Console.WriteLine("Stop game.");
+                    Console.WriteLine("Press enter to resume game...");
+                    Console.ReadLine();
+                    Thread.Sleep(1000);
+                }
             }
         }
         private void Main()
@@ -111,7 +118,7 @@ namespace MinesweeperRobot
 
                     case Face.Lose:
                         Console.WriteLine("Lose game. Retry.");
-                        board.ClickFace();
+                        lastCursor = board.ClickFace();
                         Thread.Sleep(1);
 
                         while (board.Face == Face.Lose)
@@ -172,6 +179,20 @@ namespace MinesweeperRobot
                 }
             }
 
+            if (progress <= .1)
+            {
+                var startCount = (int)((float)board.RawCount / board.BombCount * 3);
+
+                var startStrategy = new RandomStrategy();
+                Console.WriteLine("Run start strategy");
+
+                var startGuesses = startStrategy.Guess(board).Take(startCount).ToArray();
+                if (startGuesses.Any())
+                {
+                    return startGuesses;
+                }
+            }
+
             var randomStrategy = new RandomStrategy();
             Console.WriteLine("Run random strategy");
 
@@ -184,12 +205,13 @@ namespace MinesweeperRobot
 
             return new GuessGrid[0];
         }
-
         private void ApplyGuess(GameBoard gameBoard, IEnumerable<GuessGrid> guesses)
         {
             var guessGroups = guesses.GroupBy(t => t.Point);
             foreach (var guessGroup in guessGroups)
             {
+                CheckCursor(gameBoard);
+
                 var guess = guessGroup.OrderByDescending(t => t.Confidence).First();
                 switch (guess.Value)
                 {
@@ -210,19 +232,15 @@ namespace MinesweeperRobot
                 }
             }
         }
+
         private Point lastCursor = Cursor.Position;
         private void CheckCursor(GameBoard board)
         {
             if (Cursor.Position != lastCursor)
             {
                 Console.WriteLine("Cursor moved.");
-                Console.WriteLine("Stop game.");
 
-                Console.WriteLine("Press enter to resume game...");
-                Console.ReadLine();
-
-                Window.SetForegroundWindow(board.WindowHandle);
-                Thread.Sleep(1000);
+                throw new GamePauseException();
             }
         }
     }
