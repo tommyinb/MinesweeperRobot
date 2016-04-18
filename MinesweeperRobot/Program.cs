@@ -45,9 +45,13 @@ namespace MinesweeperRobot
 
             while (true)
             {
-                board.CaptureWindow();
-                RunFace(board);
-                RunGame(board);
+                TryUtil.Invoke<GameScanException>(() =>
+                {
+                    board.CaptureWindow();
+
+                    RunFace(board);
+                    RunGame(board);
+                }, numberOfTry: 3);
 
                 CheckCursor(board);
                 Thread.Sleep(1);
@@ -76,40 +80,8 @@ namespace MinesweeperRobot
                 Thread.Sleep(1000);
             }
 
+            Console.WriteLine("Preparing...");
             return new GameBoard(process.MainWindowHandle);
-        }
-        private void WriteGame(GameBoard board)
-        {
-            Console.WriteLine(board.Face);
-
-            var gridWidth = board.Grids.GetLength(0);
-            var gridHeight = board.Grids.GetLength(1);
-            for (int j = 0; j < gridHeight; j++)
-            {
-                for (int i = 0; i < gridWidth; i++)
-                {
-                    var gridValue = board.Grids[i, j];
-                    switch (gridValue)
-                    {
-                        case Grid.None: Console.Write("N"); break;
-                        case Grid.Raw: Console.Write("+"); break;
-                        case Grid.Empty: Console.Write("+"); break;
-                        case Grid.Number1: Console.Write(1); break;
-                        case Grid.Number2: Console.Write(2); break;
-                        case Grid.Number3: Console.Write(3); break;
-                        case Grid.Number4: Console.Write(4); break;
-                        case Grid.Number5: Console.Write(5); break;
-                        case Grid.Number6: Console.Write(6); break;
-                        case Grid.Number7: Console.Write(7); break;
-                        case Grid.Number8: Console.Write(8); break;
-                        case Grid.Flag: Console.Write("F"); break;
-                        case Grid.Bomb: Console.Write("B"); break;
-                        default: Console.Write("#"); break;
-                    }
-                }
-
-                Console.WriteLine();
-            }
         }
 
         private void RunFace(GameBoard board)
@@ -158,49 +130,59 @@ namespace MinesweeperRobot
         private void RunGame(GameBoard gameBoard)
         {
             gameBoard.QuickScanGrids();
+            gameBoard.QuickScanBombCount();
 
-            var strategyBoard = new StrategyBoard(gameBoard.Grids, 99);
-            var strategies = GetStrategies(strategyBoard);
-            var guesses = RunStrategies(strategyBoard, strategies);
+            var strategyBoard = new StrategyBoard(gameBoard.Grids, gameBoard.BombCount);
+            var guesses = RunStrategies(strategyBoard);
 
             ApplyGuess(gameBoard, guesses);
         }
-        private IEnumerable<IStrategy> GetStrategies(StrategyBoard board)
+        private IEnumerable<GuessGrid> RunStrategies(StrategyBoard board)
         {
-            var rawAmount = (float)board.RawCount / (board.Size.Width * board.Size.Height);
+            var progress = 1 - (float)board.RawCount / (board.Size.Width * board.Size.Height);
 
-            if (rawAmount < .9)
+            if (progress >= .1)
             {
-                yield return new CountStrategy();
-            }
-            if (rawAmount < .6)
-            {
-                yield return new BruteForceStrategy();
-            }
+                var countStrategy = new CountStrategy();
+                Console.WriteLine("Run count strategy");
 
-            yield return new RandomStrategy();
-        }
-        private IEnumerable<GuessGrid> RunStrategies(StrategyBoard board, IEnumerable<IStrategy> strategies)
-        {
-            var possibleGuesses = new List<GuessGrid>();
-            foreach (var strategy in strategies)
-            {
-                Console.WriteLine("Run " + strategy.GetType().Name);
-
-                var strategyGuesses = strategy.Guess(board).ToArray();
-
-                var confirmedGuesses = strategyGuesses.Where(t => t.Confidence >= 1).ToArray();
-                if (confirmedGuesses.Any())
+                var countGuesses = countStrategy.Guess(board).ToArray();
+                if (countGuesses.Any())
                 {
-                    return confirmedGuesses;
+                    return countGuesses;
                 }
-
-                possibleGuesses.AddRange(strategyGuesses);
             }
 
-            var possibleEmpties = possibleGuesses.Where(t => t.Value == GuessValue.Empty);
-            var bestPossibleEmpty = possibleEmpties.OrderByDescending(t => t.Confidence).First();
-            return new[] { bestPossibleEmpty };
+            if (progress >= .4)
+            {
+                var bruteForceStrategy = new BruteForceStrategy();
+                Console.WriteLine("Run brute-force strategy");
+
+                var bruteForceGuesses = bruteForceStrategy.Guess(board).ToArray();
+                if (bruteForceGuesses.Any())
+                {
+                    var confirmedBruteForceGuesses = bruteForceGuesses.Where(t => t.Confidence >= 1).ToArray();
+                    if (confirmedBruteForceGuesses.Any())
+                    {
+                        return confirmedBruteForceGuesses;
+                    }
+
+                    var probableBruteForceGuesses = bruteForceGuesses.OrderByDescending(t => t.Confidence).First();
+                    return new[] { probableBruteForceGuesses };
+                }
+            }
+
+            var randomStrategy = new RandomStrategy();
+            Console.WriteLine("Run random strategy");
+
+            var randomGuesses = randomStrategy.Guess(board);
+            if (randomGuesses.Any())
+            {
+                var probableRandomGuesses = randomGuesses.OrderByDescending(t => t.Confidence).First();
+                return new[] { probableRandomGuesses };
+            }
+
+            return new GuessGrid[0];
         }
 
         private void ApplyGuess(GameBoard gameBoard, IEnumerable<GuessGrid> guesses)
@@ -236,7 +218,7 @@ namespace MinesweeperRobot
                 Console.WriteLine("Cursor moved.");
                 Console.WriteLine("Stop game.");
 
-                Console.WriteLine("Please enter to resume game...");
+                Console.WriteLine("Press enter to resume game...");
                 Console.ReadLine();
 
                 Window.SetForegroundWindow(board.WindowHandle);
