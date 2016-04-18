@@ -13,29 +13,17 @@ namespace MinesweeperRobot.Strategy
         public IEnumerable<GuessGrid> Guess(StrategyBoard board)
         {
             var numberPoints = EnumerableUtil.Rectangle(board.Size).Where(t => board.Grids[t.X, t.Y].IsNumber());
-            var orderedNumberPoints = numberPoints.OrderBy(numberPoint =>
-            {
-                var surroundingPoints = numberPoint.Surrounding().Where(t => board.Size.Contains(t));
-                return surroundingPoints.Count(t => board.Grids[t.X, t.Y] == Grid.Raw);
-            }).ThenBy(numberPoint =>
-            {
-                var surroundingPoints = numberPoint.Surrounding().Where(t => board.Size.Contains(t));
-                var surroundingRawPoints = surroundingPoints.Where(t => board.Grids[t.X, t.Y] == Grid.Raw);
-                return surroundingRawPoints.Sum(surroundingRawPoint =>
-                {
-                    var secondarySurroundingPoints = surroundingRawPoint.Surrounding().Where(t => board.Size.Contains(t));
-                    return secondarySurroundingPoints.Count(t => board.Grids[t.X, t.Y].IsNumber());
-                });
-            });
-
             foreach (var numberPoint in numberPoints)
             {
                 var numberValue = board.Grids[numberPoint.X, numberPoint.Y];
 
                 var surroundingPoints = numberPoint.Surrounding().Where(t => board.Size.Contains(t));
                 var surroundingRawPoints = surroundingPoints.Where(t => board.Grids[t.X, t.Y] == Grid.Raw).ToArray();
+                if (surroundingRawPoints.Any() == false) continue;
 
-                var surroundingCombinations = GetCombinations(surroundingRawPoints.Count());
+                var surroundingPossibleValues = surroundingRawPoints.Select(t => new[] { GuessValue.Empty, GuessValue.Bomb });
+                var surroundingCombinations = EnumerableUtil.GetCombinations(surroundingPossibleValues).Select(t => t.ToArray()).ToArray();
+
                 var validSurroundingCombinations = surroundingCombinations.Where(combination =>
                 {
                     var bombCount = combination.Count(t => t == GuessValue.Bomb);
@@ -73,24 +61,10 @@ namespace MinesweeperRobot.Strategy
                     {
                         Point = surroundingPoint,
                         Value = probableValues.First(),
-                        Confidence = probableValues.Count() / validValues.Count()
+                        Confidence = (double)probableValues.Count() / validValues.Count()
                     };
                 }
             }
-        }
-
-        private static IEnumerable<GuessValue[]> GetCombinations(int rawCount)
-        {
-            var counts = Enumerable.Range(0, rawCount);
-            return counts.Aggregate((IEnumerable<GuessValue[]>)new[] { new GuessValue[0] }, (combinations, i) =>
-            {
-                return combinations.SelectMany(combination =>
-                {
-                    var emptyAdded = combination.Concat(new[] { GuessValue.Empty }).ToArray();
-                    var bombAdded = combination.Concat(new[] { GuessValue.Bomb }).ToArray();
-                    return new[] { emptyAdded, bombAdded };
-                });
-            });
         }
     }
 }
