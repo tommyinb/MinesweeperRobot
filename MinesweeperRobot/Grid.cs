@@ -27,7 +27,7 @@ namespace MinesweeperRobot
     {
         public static bool IsNumber(this Grid grid)
         {
-            return Grid.Number1 <= grid && grid <= Grid.Number8;
+            return grid.IsWithin(Grid.Number1, Grid.Number8);
         }
         public static bool IsWithin(this Grid grid, Grid from, Grid to)
         {

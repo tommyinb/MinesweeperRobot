@@ -56,6 +56,7 @@
     <Compile Include="Icons\IconScannerValue.cs" />
     <Compile Include="Strategy\BruteForceStrategy.cs" />
     <Compile Include="Strategy\GuessGrid.cs" />
+    <Compile Include="Strategy\GuessValue.cs" />
     <Compile Include="Strategy\RandomStrategy.cs" />
     <Compile Include="Strategy\IStrategy.cs" />
     <Compile Include="Strategy\CountStrategy.cs" />

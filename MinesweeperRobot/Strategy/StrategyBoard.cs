@@ -14,9 +14,7 @@ namespace MinesweeperRobot.Strategy
         public Size Size { get; private set; }
 
         public int BombCount { get; private set; }
-
         public int RawCount { get; private set; }
-        public int EmptyCount { get; private set; }
 
         public StrategyBoard(Grid[,] grids, int bombCount)
         {
@@ -26,10 +24,9 @@ namespace MinesweeperRobot.Strategy
             BombCount = bombCount;
 
             Reduce();
-
             RawCount = Count(Grid.Raw);
-            EmptyCount = Count(Grid.Empty);
         }
+
         private void Reduce()
         {
             var gridSize = Grids.GetSize();
@@ -48,6 +45,8 @@ namespace MinesweeperRobot.Strategy
                         Grids[surroundingPoint.X, surroundingPoint.Y] = reducedValue;
                     }
                 }
+
+                Grids[flagPoint.X, flagPoint.Y] = Grid.None;
             }
 
             var questionPoints = points.Where(t => Grids[t.X, t.Y] == Grid.Question).ToArray();
