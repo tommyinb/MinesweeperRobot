@@ -30,12 +30,15 @@ namespace MinesweeperRobot
                 {
                     Console.WriteLine("Cannot scan game.");
                     Console.WriteLine("Retry after 5 seconds...");
+                    logWriter.Flush();
                     Thread.Sleep(TimeSpan.FromSeconds(5));
                 }
-                catch (GamePauseException)
+                catch (GamePauseException e)
                 {
+                    Console.WriteLine(e.Message);
                     Console.WriteLine("Stop game.");
                     Console.WriteLine("Press enter to resume game...");
+                    logWriter.Flush();
                     Console.ReadLine();
                     Thread.Sleep(1000);
                 }
@@ -107,14 +110,12 @@ namespace MinesweeperRobot
                     case Face.Win:
                         Console.WriteLine("Win game!");
 
-                        Cursor.Position = board.FaceRectangle.Center();
+                        var winFacePoint = board.FaceRectangle.Center();
+                        Cursor.Position = winFacePoint;
+                        lastCursor = winFacePoint;
                         Console.WriteLine("Click the smart face for another game.");
 
-                        while (board.Face == Face.Win)
-                        {
-                            board.CaptureWindow();
-                            board.QuickScanFace();
-                        }
+                        WaitFaceChange(board, waitFace: Face.Win);
                         break;
 
                     case Face.Lose:
@@ -122,11 +123,7 @@ namespace MinesweeperRobot
                         lastCursor = board.ClickFace();
                         Thread.Sleep(1);
 
-                        while (board.Face == Face.Lose)
-                        {
-                            board.CaptureWindow();
-                            board.QuickScanFace();
-                        }
+                        WaitFaceChange(board, waitFace: Face.Lose);
                         break;
 
                     default:
@@ -134,16 +131,53 @@ namespace MinesweeperRobot
                 }
             }
         }
+        private void WaitFaceChange(GameBoard board, Face waitFace)
+        {
+            while (board.Face == waitFace)
+            {
+                board.CaptureWindow();
+                board.QuickScanFace();
 
+                Thread.Sleep(10);
+            }
+        }
+        
         private void RunGame(GameBoard gameBoard)
         {
             gameBoard.QuickScanGrids();
             gameBoard.QuickScanBombCount();
+            //WriteGrids(gameBoard.Grids);
 
-            var strategyBoard = new StrategyBoard(gameBoard.Grids, gameBoard.BombCount);
-            var guesses = RunStrategies(strategyBoard);
-
+            var guesses = IterateStrategies(gameBoard.Grids, gameBoard.BombCount).ToArray();
+            if (guesses.Any() == false) throw new GamePauseException("No strategies can be used.");
             ApplyGuess(gameBoard, guesses);
+        }
+        private IEnumerable<GuessGrid> IterateStrategies(Grid[,] grids, int bombCount)
+        {
+            var currBoard = new StrategyBoard(grids, bombCount);
+            var currGuesses = RunStrategies(currBoard);
+            var currConfirmeds = currGuesses.Where(t => t.Confidence >= 1).ToArray();
+
+            var currBombs = currConfirmeds.Where(t => t.Value == GuessValue.Bomb).Select(t => t.Point).Distinct().ToArray();
+            if (currBombs.Any() == false) return currGuesses;
+
+            Console.WriteLine("Iterate strategies");
+
+            var nextGrids = (Grid[,])grids.Clone();
+            foreach (var currBomb in currBombs)
+            {
+                var nextGridValue = nextGrids[currBomb.X, currBomb.Y];
+                if (nextGridValue != Grid.Raw) throw new InvalidOperationException();
+
+                nextGrids[currBomb.X, currBomb.Y] = Grid.Flag;
+            }
+            var nextBombCount = bombCount - currBombs.Count();
+            var nextGuesses = IterateStrategies(nextGrids, nextBombCount).ToArray();
+
+            var nextConfirmeds = nextGuesses.Where(t => t.Confidence >= 1);
+            if (nextConfirmeds.Any() == false) return currGuesses;
+
+            return currConfirmeds.Concat(nextConfirmeds);
         }
         private IEnumerable<GuessGrid> RunStrategies(StrategyBoard board)
         {
@@ -239,9 +273,38 @@ namespace MinesweeperRobot
         {
             if (Cursor.Position != lastCursor)
             {
-                Console.WriteLine("Cursor moved.");
+                throw new GamePauseException("Cursor moved.");
+            }
+        }
 
-                throw new GamePauseException();
+        private void WriteGrids(Grid[,] grids)
+        {
+            var size = grids.GetSize();
+            for (int j = 0; j < size.Height; j++)
+            {
+                for (int i = 0; i < size.Width; i++)
+                {
+                    var grid = grids[i, j];
+                    switch (grid)
+                    {
+                        case Grid.Raw: Console.Write("x"); break;
+                        case Grid.Empty: Console.Write(" "); break;
+                        case Grid.Number1: Console.Write(1); break;
+                        case Grid.Number2: Console.Write(2); break;
+                        case Grid.Number3: Console.Write(3); break;
+                        case Grid.Number4: Console.Write(4); break;
+                        case Grid.Number5: Console.Write(5); break;
+                        case Grid.Number6: Console.Write(6); break;
+                        case Grid.Number7: Console.Write(7); break;
+                        case Grid.Number8: Console.Write(8); break;
+                        case Grid.Flag: Console.Write("F"); break;
+                        case Grid.Question: Console.Write("?"); break;
+                        case Grid.Bomb: Console.Write("B"); break;
+                        default: throw new ArgumentException();
+                    }
+                }
+
+                Console.WriteLine();
             }
         }
     }

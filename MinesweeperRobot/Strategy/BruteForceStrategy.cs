@@ -23,7 +23,6 @@ namespace MinesweeperRobot.Strategy
 
                 var surroundingPossibleValues = surroundingRawPoints.Select(t => new[] { GuessValue.Empty, GuessValue.Bomb }).ToArray();
                 var surroundingCombinations = EnumerableUtil.Combinations(surroundingPossibleValues);
-
                 var validSurroundingCombinations = surroundingCombinations.Where(combination =>
                 {
                     var bombCount = combination.Count(t => t == GuessValue.Bomb);
@@ -57,12 +56,28 @@ namespace MinesweeperRobot.Strategy
                     var validValues = Enumerable.Range(0, validCombinationCount).Select(j => validSurroundingCombinations[j][i]).ToArray();
                     var probableValues = validValues.GroupBy(t => t).OrderByDescending(t => t.Count()).First();
 
-                    yield return new GuessGrid
+                    var confidence = (double)probableValues.Count() / validValues.Count();
+                    if (confidence >= 1)
                     {
-                        Point = surroundingPoint,
-                        Value = probableValues.First(),
-                        Confidence = (double)probableValues.Count() / validValues.Count()
-                    };
+                        yield return new GuessGrid
+                        {
+                            Point = surroundingPoint,
+                            Value = probableValues.Key,
+                            Confidence = 1
+                        };
+                    }
+                    else
+                    {
+                        if (probableValues.Key == GuessValue.Empty)
+                        {
+                            yield return new GuessGrid
+                            {
+                                Point = surroundingPoint,
+                                Value = probableValues.Key,
+                                Confidence = confidence
+                            };
+                        }
+                    }
                 }
             }
         }
