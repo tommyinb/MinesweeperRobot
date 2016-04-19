@@ -21,8 +21,8 @@ namespace MinesweeperRobot.Strategy
                 var surroundingRawPoints = surroundingPoints.Where(t => board.Grids[t.X, t.Y] == Grid.Raw).ToArray();
                 if (surroundingRawPoints.Any() == false) continue;
 
-                var surroundingPossibleValues = surroundingRawPoints.Select(t => new[] { GuessValue.Empty, GuessValue.Bomb });
-                var surroundingCombinations = EnumerableUtil.GetCombinations(surroundingPossibleValues).Select(t => t.ToArray()).ToArray();
+                var surroundingPossibleValues = surroundingRawPoints.Select(t => new[] { GuessValue.Empty, GuessValue.Bomb }).ToArray();
+                var surroundingCombinations = EnumerableUtil.Combinations(surroundingPossibleValues);
 
                 var validSurroundingCombinations = surroundingCombinations.Where(combination =>
                 {

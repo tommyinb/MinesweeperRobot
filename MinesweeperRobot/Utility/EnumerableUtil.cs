@@ -35,11 +35,24 @@ namespace MinesweeperRobot.Utility
             return pairs.ToDictionary(t => t.key, t => t.element);
         }
 
-        public static IEnumerable<IEnumerable<T>> GetCombinations<T>(IEnumerable<IEnumerable<T>> source)
+        public static IEnumerable<T[]> Combinations<T>(IEnumerable<T>[] possibleValues)
         {
-            return source.Aggregate((IEnumerable<IEnumerable<T>>)new[] { Enumerable.Empty<T>() }, (total, curr) =>
-                curr.SelectMany(currItem => total.Select(totalItem =>
-                totalItem.Concat(new[] { currItem }))));
+            var enumerators = possibleValues.Select(t => t.GetEnumerator()).ToArray();
+            if (enumerators.All(t => t.MoveNext()) == false) yield break;
+
+            while (true)
+            {
+                yield return enumerators.Select(t => t.Current).ToArray();
+
+                var resetEnumerators = enumerators.TakeWhile(t => t.MoveNext() == false).ToArray();
+                foreach (var resetEnumerator in resetEnumerators)
+                {
+                    resetEnumerator.Reset();
+                    resetEnumerator.MoveNext();
+                }
+
+                if (resetEnumerators.Length >= enumerators.Length) break;
+            }
         }
     }
 }
