@@ -22,10 +22,11 @@ namespace MinesweeperRobot.Icons
             var maxHeight = icons.Max(t => t.IntegerMap.Size.Height);
             var scannerPoints = EnumerableUtil.Rectangle(maxWidth, maxHeight).Select(point =>
             {
-                var validIcons = icons.Where(icon => icon.IntegerMap.Size.Contains(point));
+                var validIcons = icons.Where(icon => icon.IntegerMap.Size.Contains(point)).ToArray();
+                var invalidIcons = icons.Except(validIcons).ToArray();
 
                 var pixelLookup = validIcons.ToLookup(t => t.IntegerMap[point.X, point.Y]);
-                var scannerValues = pixelLookup.Select(t => new IconScannerValue { Pixel = t.Key, Icons = t.ToArray() });
+                var scannerValues = pixelLookup.Select(t => new IconScannerValue { Pixel = t.Key, Icons = t.Concat(invalidIcons).ToArray() });
 
                 return new IconScannerPoint { Point = point, Values = scannerValues.ToArray() };
             }).ToArray();
