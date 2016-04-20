@@ -10,73 +10,131 @@ namespace MinesweeperRobot.Strategy
 {
     public class BruteForceStrategy : IStrategy
     {
-        public IEnumerable<GuessGrid> Guess(StrategyBoard board)
+        public BruteForceStrategy(StrategyBoard board, int chainLength)
+        {
+            this.board = board;
+            this.chainLength = chainLength;
+        }
+        private readonly StrategyBoard board;
+        private readonly int chainLength;
+
+        public IEnumerable<GuessGrid> Guess()
+        {
+            var chains = GetChains(board).ToArray();
+            foreach (var chain in chains)
+            {
+                var combinations = GetCombinations(chain, board);
+                var guesses = GetGuesses(chain, combinations);
+
+                foreach (var guess in guesses)
+                {
+                    yield return guess;
+                }
+            }
+        }
+
+        private IEnumerable<Chain<Point>> GetChains(StrategyBoard board)
         {
             var numberPoints = EnumerableUtil.Rectangle(board.Size).Where(t => board.Grids[t.X, t.Y].IsNumber());
-            foreach (var numberPoint in numberPoints)
+            var surroundingRawPoints = numberPoints.Select(numberPoint =>
             {
-                var numberValue = board.Grids[numberPoint.X, numberPoint.Y];
-
                 var surroundingPoints = numberPoint.Surrounding().Where(t => board.Size.Contains(t));
-                var surroundingRawPoints = surroundingPoints.Where(t => board.Grids[t.X, t.Y] == Grid.Raw).ToArray();
-                if (surroundingRawPoints.Any() == false) continue;
+                return surroundingPoints.Where(t => board.Grids[t.X, t.Y] == Grid.Raw).ToChain();
+            });
 
-                var surroundingPossibleValues = surroundingRawPoints.Select(t => new[] { GuessValue.Empty, GuessValue.Bomb }).ToArray();
-                var surroundingCombinations = EnumerableUtil.Combinations(surroundingPossibleValues);
-                var validSurroundingCombinations = surroundingCombinations.Where(combination =>
-                {
-                    var bombCount = combination.Count(t => t == GuessValue.Bomb);
-                    return bombCount == (int)numberValue;
-                }).Where(combination =>
-                {
-                    var surroundingBombPoints = surroundingRawPoints.Where((t, i) => combination[i] == GuessValue.Bomb).ToList();
+            return MergeChains(surroundingRawPoints).Distinct();
+        }
+        private IEnumerable<Chain<Point>> MergeChains(IEnumerable<Chain<Point>> chains)
+        {
+            var currChains = new List<Chain<Point>>(chains);
+            for (int i = 0; i < currChains.Count; i++)
+            {
+                var currChain = currChains[i];
 
-                    return surroundingRawPoints.All(surroundingPoint =>
+                for (int j = i + 1; j < currChains.Count; j++)
+                {
+                    var nextRawChain = currChains[j];
+
+                    var connectedLength = currChain.Length + nextRawChain.Length;
+                    if (connectedLength > chainLength) continue;
+
+                    var nextChainSurroundingPoints = nextRawChain.SelectMany(t => t.Surrounding());
+                    var chainsConnected = nextChainSurroundingPoints.Intersect(currChain).Any();
+                    if (chainsConnected)
                     {
-                        var secondarySurroundingPoints = surroundingPoint.Surrounding().Where(t => board.Size.Contains(t));
-                        var secondarySurroundingNumberPoints = secondarySurroundingPoints.Where(t => board.Grids[t.X, t.Y].IsNumber());
+                        currChain = currChain.Concat(nextRawChain).Distinct().ToChain();
+                        currChains.RemoveAt(j);
+                        j -= 1;
+                    }
+                }
 
-                        return secondarySurroundingNumberPoints.All(secondarySurroundingPoint =>
-                        {
-                            var tertiarySurroundingPoints = secondarySurroundingPoint.Surrounding().Where(t => board.Size.Contains(t));
-                            var tertiarySurroundingBombCount = tertiarySurroundingPoints.Count(surroundingBombPoints.Contains);
+                yield return currChain;
+            }
+        }
 
-                            var secondarySurroundingValue = board.Grids[secondarySurroundingPoint.X, secondarySurroundingPoint.Y];
+        private IEnumerable<GuessValue[]> GetCombinations(Chain<Point> chain, StrategyBoard board)
+        {
+            var possibleValues = chain.Select(t => new[] { GuessValue.Empty, GuessValue.Bomb }).ToArray();
+            var combinations = EnumerableUtil.Combinations(possibleValues);
+            return combinations.Where(combination =>
+            {
+                var pointValues = chain.ToDictionary((t, i) => t, (t, i) => combination[i]);
 
-                            return tertiarySurroundingBombCount <= (int)secondarySurroundingValue;
-                        });
-                    });
-                }).ToArray();
+                var surroundingPoints = chain.SelectMany(point => point.Surrounding()).Where(t => board.Size.Contains(t)).Distinct();
+                var surroundingNumberPoints = surroundingPoints.Where(t => board.Grids[t.X, t.Y].IsWithin(Grid.Empty, Grid.Number8));
 
-                var validCombinationCount = validSurroundingCombinations.GetLength(0);
-                for (int i = 0; i < surroundingRawPoints.Length; i++)
+                return surroundingNumberPoints.All(t => MatchValue(t, pointValues));
+            });
+        }
+        private bool MatchValue(Point numberPoint, Dictionary<Point, GuessValue> guessValues)
+        {
+            var value = (int)board.Grids[numberPoint.X, numberPoint.Y];
+
+            var surroundingPoints = numberPoint.Surrounding().Where(t => board.Size.Contains(t));
+            var surroundingRawPoints = surroundingPoints.Where(t => board.Grids[t.X, t.Y] == Grid.Raw).ToArray();
+
+            var surroundingGuessValues = surroundingPoints.Intersect(guessValues.Keys).Select(t => guessValues[t]).ToArray();
+            var surroundingGuessCount = surroundingGuessValues.Count();
+
+            var minSurroundingBombCount = surroundingGuessValues.Count(t => t == GuessValue.Bomb);
+            if (minSurroundingBombCount > value) return false;
+
+            var maxSurroundingBombCount = surroundingRawPoints.Count() - surroundingGuessCount + minSurroundingBombCount;
+            if (maxSurroundingBombCount < value) return false;
+
+            return true;
+        }
+
+        private IEnumerable<GuessGrid> GetGuesses(Chain<Point> chain, IEnumerable<GuessValue[]> combinations)
+        {
+            for (int i = 0; i < chain.Length; i++)
+            {
+                var point = chain[i];
+                var values = combinations.Select(t => t[i]).ToArray();
+
+                var valueGroups = values.GroupBy(t => t);
+                var probableValueGroup = valueGroups.OrderByDescending(t => t.Count()).First();
+
+                var confidence = (double)probableValueGroup.Count() / values.Count();
+                if (confidence >= 1)
                 {
-                    var surroundingPoint = surroundingRawPoints[i];
-
-                    var validValues = Enumerable.Range(0, validCombinationCount).Select(j => validSurroundingCombinations[j][i]).ToArray();
-                    var probableValues = validValues.GroupBy(t => t).OrderByDescending(t => t.Count()).First();
-
-                    var confidence = (double)probableValues.Count() / validValues.Count();
-                    if (confidence >= 1)
+                    yield return new GuessGrid
+                    {
+                        Point = point,
+                        Value = probableValueGroup.Key,
+                        Confidence = 1
+                    };
+                }
+                else
+                {
+                    if (probableValueGroup.Key == GuessValue.Empty)
                     {
                         yield return new GuessGrid
                         {
-                            Point = surroundingPoint,
-                            Value = probableValues.Key,
-                            Confidence = 1
+                            Point = point,
+                            Value = probableValueGroup.Key,
+                            Confidence = confidence
                         };
-                    }
-                    else
-                    {
-                        if (probableValues.Key == GuessValue.Empty)
-                        {
-                            yield return new GuessGrid
-                            {
-                                Point = surroundingPoint,
-                                Value = probableValues.Key,
-                                Confidence = confidence
-                            };
-                        }
                     }
                 }
             }

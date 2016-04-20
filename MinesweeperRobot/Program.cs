@@ -185,10 +185,10 @@ namespace MinesweeperRobot
 
             if (progress >= .1)
             {
-                var countStrategy = new CountStrategy();
+                var countStrategy = new CountStrategy(board);
                 Console.WriteLine("Run count strategy");
 
-                var countGuesses = countStrategy.Guess(board).ToArray();
+                var countGuesses = countStrategy.Guess().ToArray();
                 if (countGuesses.Any())
                 {
                     return countGuesses;
@@ -197,10 +197,10 @@ namespace MinesweeperRobot
 
             if (progress >= .4)
             {
-                var bruteForceStrategy = new BruteForceStrategy();
+                var bruteForceStrategy = new BruteForceStrategy(board, progress < .7 ? 5 : 8);
                 Console.WriteLine("Run brute-force strategy");
 
-                var bruteForceGuesses = bruteForceStrategy.Guess(board).ToArray();
+                var bruteForceGuesses = bruteForceStrategy.Guess().ToArray();
                 if (bruteForceGuesses.Any())
                 {
                     var confirmedBruteForceGuesses = bruteForceGuesses.Where(t => t.Confidence >= 1).ToArray();
@@ -218,20 +218,20 @@ namespace MinesweeperRobot
             {
                 var startCount = (int)((float)board.RawCount / board.BombCount * 3);
 
-                var startStrategy = new RandomStrategy();
+                var startStrategy = new RandomStrategy(board);
                 Console.WriteLine("Run start strategy");
 
-                var startGuesses = startStrategy.Guess(board).Take(startCount).ToArray();
+                var startGuesses = startStrategy.Guess().Take(startCount).ToArray();
                 if (startGuesses.Any())
                 {
                     return startGuesses;
                 }
             }
 
-            var randomStrategy = new RandomStrategy();
+            var randomStrategy = new RandomStrategy(board);
             Console.WriteLine("Run random strategy");
 
-            var randomGuesses = randomStrategy.Guess(board);
+            var randomGuesses = randomStrategy.Guess();
             if (randomGuesses.Any())
             {
                 var probableRandomGuesses = randomGuesses.OrderByDescending(t => t.Confidence).First();

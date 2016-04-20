@@ -11,9 +11,18 @@ namespace MinesweeperRobot.Utility
     {
         public Chain(IEnumerable<T> items)
         {
-            this.items = new List<T>(items);
+            this.items = items.ToArray();
         }
-        private readonly List<T> items;
+        private readonly T[] items;
+
+        public T this[int index]
+        {
+            get { return items[index]; }
+        }
+        public int Length
+        {
+            get { return items.Length; }
+        }
 
         public override bool Equals(object obj)
         {
@@ -30,7 +39,7 @@ namespace MinesweeperRobot.Utility
 
         public IEnumerator<T> GetEnumerator()
         {
-            return items.GetEnumerator();
+            return items.Cast<T>().GetEnumerator();
         }
         IEnumerator IEnumerable.GetEnumerator()
         {

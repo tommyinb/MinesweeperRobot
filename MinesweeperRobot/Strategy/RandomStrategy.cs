@@ -10,7 +10,13 @@ namespace MinesweeperRobot.Strategy
 {
     public class RandomStrategy : IStrategy
     {
-        public IEnumerable<GuessGrid> Guess(StrategyBoard board)
+        public RandomStrategy(StrategyBoard board)
+        {
+            this.board = board;
+        }
+        private readonly StrategyBoard board;
+
+        public IEnumerable<GuessGrid> Guess()
         {
             var gridPoints = EnumerableUtil.Rectangle(board.Size);
             var rawPoints = gridPoints.Where(t => board.Grids[t.X, t.Y] == Grid.Raw).ToArray();

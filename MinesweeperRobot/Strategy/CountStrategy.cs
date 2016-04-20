@@ -10,7 +10,13 @@ namespace MinesweeperRobot.Strategy
 {
     public class CountStrategy : IStrategy
     {
-        public IEnumerable<GuessGrid> Guess(StrategyBoard board)
+        public CountStrategy(StrategyBoard board)
+        {
+            this.board = board;
+        }
+        private readonly StrategyBoard board;
+
+        public IEnumerable<GuessGrid> Guess()
         {
             var emptyPoints = EnumerableUtil.Rectangle(board.Size).Where(t => board.Grids[t.X, t.Y] == Grid.Empty);
             foreach (var emptyPoint in emptyPoints)
