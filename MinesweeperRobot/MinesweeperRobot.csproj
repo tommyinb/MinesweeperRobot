@@ -113,9 +113,7 @@
     <EmbeddedResource Include="Icons\count7.png" />
     <EmbeddedResource Include="Icons\count8.png" />
     <EmbeddedResource Include="Icons\count9.png" />
-    <Content Include="Winmine__XP.exe">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <EmbeddedResource Include="Winmine__XP.exe" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

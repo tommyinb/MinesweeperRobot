@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -22,6 +23,8 @@ namespace MinesweeperRobot
 
             while (true)
             {
+                ConsoleUtil.WriteLine(ConsoleColor.Cyan, "Pause the robot by moving your mouse whenever you want to.");
+
                 try
                 {
                     new Program().Main();
@@ -76,9 +79,23 @@ namespace MinesweeperRobot
             if (process == null)
             {
                 Console.WriteLine("Cannot find minesweeper.");
-                Console.WriteLine("Start a new one.");
+                ConsoleUtil.WriteLine(ConsoleColor.Green, "Start a new one.");
 
-                process = Process.Start("Winmine__XP.exe");
+                var gameFile = "Winmine__XP.exe";
+                if (File.Exists(gameFile) == false)
+                {
+                    Console.WriteLine("Cannot find " + gameFile + ".");
+                    ConsoleUtil.WriteLine(ConsoleColor.Green, "Create a new one.");
+
+                    var resourceName = typeof(Program).Namespace + "." + gameFile;
+                    using (var resourceStream = typeof(Program).Assembly.GetManifestResourceStream(resourceName))
+                    using (var fileStream = File.OpenWrite(gameFile))
+                    {
+                        resourceStream.CopyTo(fileStream);
+                    }
+                }
+
+                process = Process.Start(gameFile);
                 process.WaitForInputIdle();
                 Thread.Sleep(1000);
             }
@@ -273,7 +290,7 @@ namespace MinesweeperRobot
         {
             if (Cursor.Position != lastCursor)
             {
-                throw new GamePauseException("Cursor moved.");
+                throw new GamePauseException("Mouse moved.");
             }
         }
 
