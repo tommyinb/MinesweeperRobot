@@ -35,9 +35,9 @@ namespace MinesweeperRobot
                 }
                 catch (GamePauseException e)
                 {
-                    Console.WriteLine(e.Message);
+                    ConsoleUtil.WriteLine(ConsoleColor.Magenta, e.Message);
                     Console.WriteLine("Stop game.");
-                    Console.WriteLine("Press enter to resume game...");
+                    ConsoleUtil.WriteLine(ConsoleColor.Cyan, "Press enter to resume game...");
                     logWriter.Flush();
                     Console.ReadLine();
                     Thread.Sleep(1000);
@@ -108,12 +108,12 @@ namespace MinesweeperRobot
                         return;
 
                     case Face.Win:
-                        Console.WriteLine("Win game!");
+                        ConsoleUtil.WriteLine(ConsoleColor.Yellow, "Win game!");
 
                         var winFacePoint = board.FaceRectangle.Center();
                         Cursor.Position = winFacePoint;
                         lastCursor = winFacePoint;
-                        Console.WriteLine("Click the smart face for another game.");
+                        ConsoleUtil.WriteLine(ConsoleColor.Cyan, "Click the smart face for another game.");
 
                         WaitFaceChange(board, waitFace: Face.Win);
                         break;

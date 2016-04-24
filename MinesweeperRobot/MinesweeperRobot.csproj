@@ -61,6 +61,7 @@
     <Compile Include="Strategy\IStrategy.cs" />
     <Compile Include="Strategy\CountStrategy.cs" />
     <Compile Include="Strategy\StrategyBoard.cs" />
+    <Compile Include="Utility\ConsoleUtil.cs" />
     <Compile Include="Utility\TimeLog.cs" />
     <Compile Include="Utility\ArrayUtil.cs" />
     <Compile Include="Utility\Chain.cs" />
