@@ -67,7 +67,7 @@ namespace MinesweeperRobot
                     RunGame(board);
                 }, numberOfTry: 3);
 
-                CheckCursor(board);
+                CheckCursor();
                 Thread.Sleep(1);
             }
         }
@@ -152,6 +152,8 @@ namespace MinesweeperRobot
         {
             while (board.Face == waitFace)
             {
+                CheckCursor();
+
                 board.CaptureWindow();
                 board.QuickScanFace();
 
@@ -262,7 +264,7 @@ namespace MinesweeperRobot
             var guessGroups = guesses.GroupBy(t => t.Point);
             foreach (var guessGroup in guessGroups)
             {
-                CheckCursor(gameBoard);
+                CheckCursor();
 
                 var guess = guessGroup.OrderByDescending(t => t.Confidence).First();
                 switch (guess.Value)
@@ -286,7 +288,7 @@ namespace MinesweeperRobot
         }
 
         private Point lastCursor = Cursor.Position;
-        private void CheckCursor(GameBoard board)
+        private void CheckCursor()
         {
             if (Cursor.Position != lastCursor)
             {
